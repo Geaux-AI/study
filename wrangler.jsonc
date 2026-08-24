@@ -1,7 +1,7 @@
 {
   // Static site: no build step, no server code. Cloudflare Workers just
   // serves the files in this repo as-is, the same way GitHub Pages does.
-  "name": "labeta1901",
+  "name": "greasebucket1901",
   "compatibility_date": "2026-08-24",
   "assets": {
     "directory": "./",
