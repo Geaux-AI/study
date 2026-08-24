@@ -38,65 +38,31 @@
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ΣΦΕ Study Resources</title>
+  <title>Study Resources | Sigma Phi Epsilon</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-
-  <!-- HEADER -->
   <header>
     <div class="header-top">
-      <div class="greek-letters">ΣΦΕ</div>
+      <div class="greek-letters">&Sigma;&Phi;&Epsilon;</div>
       <div class="header-text">
         <h1>Sigma Phi Epsilon</h1>
         <p>Study Resources</p>
       </div>
     </div>
     <nav>
-      <a href="index.html" class="active">Home</a>
-      <a href="classes-ag.html">Classes A–G</a>
-      <a href="classes-ho.html">Classes H–O</a>
-      <a href="classes-pz.html">Classes P–Z</a>
+      <a href="index.html">Home</a>
+      <a href="classes-ag.html">Classes A&ndash;G</a>
+      <a href="classes-ho.html">Classes H&ndash;O</a>
+      <a href="classes-pz.html">Classes P&ndash;Z</a>
       <a href="professor-ratings.html">Prof Ratings</a>
       <a href="sigep-ratings.html">SigEp Ratings</a>
       <a href="contact.html">Contact / Submit</a>
     </nav>
   </header>
 
-  <!-- HERO — search is the front door -->
-  <div class="hero">
-    <div id="search-hero"></div>
-    <p class="hero-stats">3,134 files &middot; 400 professors &middot; 245 courses</p>
-    <div class="hero-cards">
-      <a href="classes-ag.html" class="hero-card">
-        <span class="card-icon">📚</span>
-        <span class="card-label">Browse A–G</span>
-      </a>
-      <a href="classes-ho.html" class="hero-card">
-        <span class="card-icon">📚</span>
-        <span class="card-label">Browse H–O</span>
-      </a>
-      <a href="classes-pz.html" class="hero-card">
-        <span class="card-icon">📚</span>
-        <span class="card-label">Browse P–Z</span>
-      </a>
-      <a href="contact.html" class="hero-card">
-        <span class="card-icon">📤</span>
-        <span class="card-label">Submit Materials</span>
-      </a>
-    </div>
-  </div>
-
-  <!-- MAIN -->
   <main>
-
-    <div class="info-box">
-      💡 <strong>How to contribute:</strong> Have old study materials, notes, or practice problems? Hit the
-      <a href="contact.html" style="color:var(--gold);">Contact / Submit</a> page and share with us.
-      Brothers keep brothers sharp. <strong>V&V.</strong>
-    </div>
-
-
+    <div id="rv-root" class="rv"></div>
   </main>
 
   <div style="text-align:center; padding: 30px 20px 20px; color: rgba(255,255,255,0.3); font-size: 0.82rem;">
@@ -104,6 +70,8 @@
   </div>
 
   <script src="nav-data.js"></script>
+  <script src="resources.js"></script>
+  <script src="resource-view.js"></script>
   <script src="nav.js"></script>
 </body>
 </html>
