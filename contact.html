@@ -79,7 +79,7 @@
 
         <div class="form-group">
           <label for="u-by">Your name <span style="opacity:0.5;font-weight:400;">(optional)</span></label>
-          <input type="text" id="u-by" placeholder="so brothers know who to thank" />
+          <input type="text" id="u-by" placeholder="optional" />
         </div>
 
         <button type="submit" class="btn btn-gold" id="u-submit-btn">Upload Resource</button>
@@ -90,8 +90,7 @@
     </div>
 
     <div id="sigep-rating" style="background:linear-gradient(135deg,rgba(200,160,40,0.08),rgba(75,38,131,0.12));border:1px solid rgba(200,160,40,0.3);border-radius:12px;padding:28px 32px;margin-bottom:36px;">
-      <h2 style="margin:0 0 6px;color:#c8a028;font-size:1.2rem;letter-spacing:0.5px;">ΣΦΕ Brother Rating</h2>
-      <p style="margin:0 0 20px;color:rgba(255,255,255,0.55);font-size:0.88rem;">Your honest take on a professor — tips, warnings, and whether brothers should take them.</p>
+      <h2 style="margin:0 0 6px;color:#c8a028;font-size:1.2rem;letter-spacing:0.5px;">Rate a Professor</h2>
 
       <form onsubmit="return handleRatingSubmit(event)">
         <div style="display:flex;gap:20px;flex-wrap:wrap;">
@@ -119,18 +118,18 @@
         </div>
 
         <div class="form-group">
-          <label for="r-notes">Notes for Brothers</label>
+          <label for="r-notes">Notes</label>
           <textarea id="r-notes" rows="4" placeholder="e.g. Tests straight from slides, go to every class, office hours actually help. Easy A if you put in the work..." required style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(200,160,40,0.3);background:rgba(255,255,255,0.05);color:#fff;font-size:0.9rem;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea>
         </div>
 
         <div class="form-group">
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
             <input type="checkbox" id="r-recommended" style="width:16px;height:16px;accent-color:#c8a028;" />
-            <span style="font-size:0.88rem;">I recommend this professor to brothers</span>
+            <span style="font-size:0.88rem;">I recommend this professor</span>
           </label>
         </div>
 
-        <button type="submit" class="btn btn-gold" id="r-submit-btn">Submit Brother Rating</button>
+        <button type="submit" class="btn btn-gold" id="r-submit-btn">Submit Rating</button>
         <div id="rating-success" style="display:none;margin-top:12px;color:#27ae60;font-size:0.88rem;">✓ Rating submitted — it's now live on the SigEp Ratings page!</div>
         <div id="rating-error" style="display:none;margin-top:12px;color:#e74c3c;font-size:0.88rem;">Something went wrong. Try again.</div>
       </form>
@@ -158,7 +157,7 @@
     <div id="admin-section" style="display:none;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:28px 32px;">
       <h3 style="margin:0 0 6px;color:#c8a028;font-size:1rem;text-transform:uppercase;letter-spacing:1px;">SLC Panel</h3>
       <p style="margin:0 0 22px;color:rgba(255,255,255,0.55);font-size:0.88rem;line-height:1.6;">
-        Brothers add their own files and ratings &mdash; you don't have to do anything for that.
+        People add their own files and ratings &mdash; you don't have to do anything for that.
         This is here for the times something needs removing.
       </p>
 
@@ -409,7 +408,7 @@
     }
 
     btn.disabled = false;
-    btn.textContent = 'Submit Brother Rating';
+    btn.textContent = 'Submit Rating';
     return false;
   }
   </script>
