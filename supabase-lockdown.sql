@@ -12,6 +12,20 @@
 --     Dashboard -> Table Editor -> ratings -> select the row -> Delete
 -- ============================================================
 
+-- ------------------------------------------------------------
+-- 1. Add a submission date so the site can show how recent a
+--    rating is, and sort newest-first. The original table had no
+--    timestamp column at all.
+-- ------------------------------------------------------------
+alter table public.ratings
+  add column if not exists created_at timestamptz not null default now();
+
+create index if not exists ratings_created_at_idx
+  on public.ratings (created_at desc);
+
+-- ------------------------------------------------------------
+-- 2. Lock the table down
+-- ------------------------------------------------------------
 alter table public.ratings enable row level security;
 
 -- Anyone may read ratings. The site is behind a shared password, not real auth.

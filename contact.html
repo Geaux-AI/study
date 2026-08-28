@@ -47,7 +47,8 @@
           </div>
           <div class="form-group" style="flex:1;min-width:200px;">
             <label for="r-course">Course (optional)</label>
-            <input type="text" id="r-course" placeholder="e.g. BIOL 1001" />
+            <input type="text" id="r-course" placeholder="e.g. BIOL 1001" list="course-options" autocomplete="off" />
+            <datalist id="course-options"></datalist>
           </div>
         </div>
 
@@ -122,6 +123,7 @@
 
   </main>
 
+  <script src="nav-data.js"></script>
   <script src="supabase-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
@@ -161,6 +163,23 @@
       document.getElementById('sigep-rating').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   }
+
+  // Suggest real course codes so the department filter on the ratings page has
+  // consistent data to work with. Free text still works for anything missing.
+  (function () {
+    if (!window.NAV_DATA) return;
+    var seen = {}, out = [];
+    Object.keys(NAV_DATA).forEach(function (k) {
+      NAV_DATA[k].depts.forEach(function (d) {
+        d.courses.forEach(function (c) {
+          if (!seen[c.name]) { seen[c.name] = 1; out.push(c.name); }
+        });
+      });
+    });
+    out.sort();
+    document.getElementById('course-options').innerHTML =
+      out.map(function (n) { return '<option value="' + esc(n) + '">'; }).join('');
+  })();
 
   async function handleRatingSubmit(e) {
     e.preventDefault();
@@ -204,7 +223,6 @@
   }
   </script>
 
-  <script src="nav-data.js"></script>
   <script src="nav.js"></script>
 </body>
 </html>

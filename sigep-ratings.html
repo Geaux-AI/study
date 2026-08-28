@@ -82,6 +82,38 @@
     }
     #sr-search::placeholder { color: rgba(255,255,255,0.35); }
     .sr-count { color: rgba(255,255,255,0.4); font-size: 0.82rem; margin-top: 8px; }
+
+    /* ---- filter bar ---- */
+    .sr-filters { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start;
+                  justify-content:space-between; margin-top:14px; }
+    .sr-chips { display:flex; flex-wrap:wrap; gap:7px; flex:1; min-width:240px; }
+    .sr-chip { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14);
+               color:rgba(255,255,255,0.75); border-radius:20px; padding:5px 13px;
+               font-family:'Oswald',sans-serif; font-size:0.8rem; letter-spacing:0.6px;
+               cursor:pointer; transition:background 0.15s,color 0.15s,border-color 0.15s; }
+    .sr-chip span { opacity:0.5; font-size:0.74rem; margin-left:3px; }
+    .sr-chip:hover { border-color:rgba(255,184,28,0.5); color:#fff; }
+    .sr-chip.is-on { background:var(--gold); border-color:var(--gold);
+                     color:var(--purple-dark); font-weight:600; }
+    .sr-chip.is-on span { opacity:0.65; }
+
+    .sr-controls { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+    .sr-toggle { display:flex; align-items:center; gap:7px; cursor:pointer;
+                 color:rgba(255,255,255,0.65); font-size:0.82rem; white-space:nowrap; }
+    .sr-toggle input { accent-color:var(--gold); width:15px; height:15px; cursor:pointer; }
+    #sr-sort { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.16);
+               color:rgba(255,255,255,0.85); border-radius:8px; padding:6px 10px;
+               font-size:0.82rem; font-family:inherit; cursor:pointer; outline:none; }
+    #sr-sort:focus { border-color:var(--gold); }
+
+    /* ---- submitted-when stamp ---- */
+    .sr-when { color:rgba(255,255,255,0.35); font-size:0.75rem; margin-left:10px;
+               letter-spacing:0.3px; cursor:default; }
+
+    @media (max-width: 620px) {
+      .sr-filters { flex-direction:column; }
+      .sr-controls { width:100%; justify-content:space-between; }
+    }
   </style>
 </head>
 <body>
@@ -114,12 +146,27 @@
       Want to add one? Go to <a href="contact.html#sigep-rating" style="color:var(--gold);">Contact / Submit</a>.
     </div>
 
-    <input id="sr-search" type="text" placeholder="Search by professor or course..." oninput="filterRatings(this.value)" style="margin-top:20px;">
+    <input id="sr-search" type="text" placeholder="Search professor, course, or keyword..." oninput="applyFilters()" style="margin-top:20px;">
+
+    <div class="sr-filters">
+      <div class="sr-chips" id="sr-depts"></div>
+      <div class="sr-controls">
+        <label class="sr-toggle"><input type="checkbox" id="sr-recommended-only" onchange="applyFilters()"> Recommended only</label>
+        <select id="sr-sort" onchange="applyFilters()">
+          <option value="new">Newest first</option>
+          <option value="old">Oldest first</option>
+          <option value="high">Highest rated</option>
+          <option value="low">Lowest rated</option>
+        </select>
+      </div>
+    </div>
+
     <div class="sr-count" id="sr-count">Loading...</div>
     <div id="sr-grid" class="sr-grid"></div>
 
   </main>
 
+  <script src="nav-data.js"></script>
   <script src="supabase-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
@@ -140,14 +187,64 @@
 
   // Everything here came from a form, so every field gets escaped — otherwise
   // a rating containing HTML runs as markup for every brother who loads the page.
+  // Departments come from the course code: "BIOL 1001" -> "BIOL".
+  // Free-text entry means this is best-effort, hence the fallback.
+  function deptOf(course) {
+    var m = /^\s*([A-Za-z]{2,5})/.exec(course || '');
+    return m ? m[1].toUpperCase() : '';
+  }
+
+  var DEPT_NAMES = (function () {
+    var map = {};
+    if (window.NAV_DATA) {
+      Object.keys(NAV_DATA).forEach(function (k) {
+        NAV_DATA[k].depts.forEach(function (d) { map[d.code] = d.name; });
+      });
+    }
+    return map;
+  })();
+
+  function whenText(iso) {
+    if (!iso) return '';
+    var then = new Date(iso), now = new Date();
+    var days = Math.floor((now - then) / 86400000);
+    if (isNaN(days)) return '';
+    if (days <= 0) return 'today';
+    if (days === 1) return 'yesterday';
+    if (days < 30) return days + ' days ago';
+    if (days < 365) {
+      var mo = Math.round(days / 30);
+      return mo + (mo === 1 ? ' month ago' : ' months ago');
+    }
+    var yr = Math.round(days / 365);
+    return yr + (yr === 1 ? ' year ago' : ' years ago');
+  }
+
+  function fullDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    return isNaN(d) ? '' : d.toLocaleDateString(undefined,
+      { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  // Everything here came from a form, so every field gets escaped — otherwise
+  // a rating containing HTML runs as markup for every brother who loads the page.
   function renderCard(r) {
-    var prof = esc(r.professor), course = esc(r.course || ''), id = esc(r.id);
-    return '<div class="sr-card" data-name="' + prof.toLowerCase() + '" data-course="' + course.toLowerCase() + '">' +
+    var prof = esc(r.professor), course = esc(r.course || '');
+    var when = whenText(r.created_at);
+    return '<div class="sr-card" data-name="' + prof.toLowerCase() +
+             '" data-course="' + course.toLowerCase() +
+             '" data-notes="' + esc(String(r.notes || '')).toLowerCase() +
+             '" data-dept="' + deptOf(r.course) +
+             '" data-rating="' + (r.rating || 0) +
+             '" data-rec="' + (r.recommend ? '1' : '0') + '">' +
       '<div class="sr-card-header">' +
         '<div class="sr-prof-name">' + prof + '</div>' +
         (r.course ? '<span class="sr-course-badge">' + course + '</span>' : '') +
       '</div>' +
-      '<div class="sr-stars">' + starsHTML(r.rating) + '</div>' +
+      '<div class="sr-stars">' + starsHTML(r.rating) +
+        (when ? '<span class="sr-when" title="' + fullDate(r.created_at) + '">' + when + '</span>' : '') +
+      '</div>' +
       (r.recommend ? '<div class="sr-rec-badge">✓ Recommended by Brothers</div>' : '') +
       (r.notes ? '<div class="sr-notes">' + esc(r.notes) + '</div>' : '') +
     '</div>';
@@ -177,6 +274,7 @@
       // id is auto-incrementing, so descending id is newest-first without
       // depending on a timestamp column the table may not have.
       var res = await _supabase.from('ratings').select('*').order('id', { ascending: false });
+      // created_at is used for display and sorting; id ordering is the safe default
       data = res.data; error = res.error;
     } catch (e) {
       return backendDown(grid, e);
@@ -195,25 +293,85 @@
     }
 
     grid.innerHTML = data.map(renderCard).join('');
-    updateCount(data.length);
+    // remember arrival order (newest-first from the query) for date sorting
+    [].slice.call(grid.querySelectorAll('.sr-card')).forEach(function (c, i) { c.dataset.idx = i; });
+    buildDeptChips(data);
+    applyFilters();
   }
 
-  function filterRatings(q) {
-    q = q.toLowerCase();
-    var cards = document.querySelectorAll('.sr-card');
+  // Only show chips for departments that actually have ratings — an empty
+  // filter is worse than no filter.
+  var activeDept = '';
+  function buildDeptChips(data) {
+    var counts = {};
+    data.forEach(function (r) {
+      var d = deptOf(r.course);
+      if (d) counts[d] = (counts[d] || 0) + 1;
+    });
+    var codes = Object.keys(counts).sort();
+    var host = document.getElementById('sr-depts');
+    if (!codes.length) { host.innerHTML = ''; return; }
+
+    var html = '<button class="sr-chip is-on" data-dept="">All <span>' + data.length + '</span></button>';
+    html += codes.map(function (c) {
+      var label = DEPT_NAMES[c] ? esc(DEPT_NAMES[c]) : c;
+      return '<button class="sr-chip" data-dept="' + c + '" title="' + label + '">' +
+             c + ' <span>' + counts[c] + '</span></button>';
+    }).join('');
+    host.innerHTML = html;
+
+    host.querySelectorAll('.sr-chip').forEach(function (b) {
+      b.onclick = function () {
+        activeDept = b.getAttribute('data-dept');
+        host.querySelectorAll('.sr-chip').forEach(function (x) { x.classList.remove('is-on'); });
+        b.classList.add('is-on');
+        applyFilters();
+      };
+    });
+  }
+
+  function applyFilters() {
+    var q = (document.getElementById('sr-search').value || '').toLowerCase().trim();
+    var recOnly = document.getElementById('sr-recommended-only').checked;
+    var sort = document.getElementById('sr-sort').value;
+    var grid = document.getElementById('sr-grid');
+    var cards = [].slice.call(grid.querySelectorAll('.sr-card'));
+    if (!cards.length) return;
+
     var visible = 0;
-    cards.forEach(function(card) {
-      var show = !q || card.dataset.name.includes(q) || card.dataset.course.includes(q);
+    cards.forEach(function (card) {
+      var d = card.dataset;
+      var matchQ = !q || d.name.indexOf(q) > -1 || d.course.indexOf(q) > -1 || d.notes.indexOf(q) > -1;
+      var matchD = !activeDept || d.dept === activeDept;
+      var matchR = !recOnly || d.rec === '1';
+      var show = matchQ && matchD && matchR;
       card.style.display = show ? '' : 'none';
       if (show) visible++;
     });
+
+    // Reordering the existing nodes avoids re-rendering (and re-escaping) everything.
+    var order = cards.slice().sort(function (a, b) {
+      if (sort === 'high') return b.dataset.rating - a.dataset.rating;
+      if (sort === 'low')  return a.dataset.rating - b.dataset.rating;
+      var ai = +a.dataset.idx, bi = +b.dataset.idx;
+      return sort === 'old' ? bi - ai : ai - bi;   // data arrives newest-first
+    });
+    order.forEach(function (c) { grid.appendChild(c); });
+
     updateCount(visible);
+    var empty = grid.querySelector('.sr-noresults');
+    if (empty) empty.remove();
+    if (!visible) {
+      var msg = document.createElement('div');
+      msg.className = 'sr-empty sr-noresults';
+      msg.textContent = 'No ratings match those filters.';
+      grid.appendChild(msg);
+    }
   }
 
   loadRatings();
   </script>
 
-  <script src="nav-data.js"></script>
   <script src="nav.js"></script>
 </body>
 </html>
