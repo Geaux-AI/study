@@ -156,23 +156,59 @@
 
     <!-- SLC ADMIN BOX — hidden until password entered -->
     <div id="admin-section" style="display:none;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:28px 32px;">
-      <h3 style="margin:0 0 10px;color:#c8a028;font-size:1rem;text-transform:uppercase;letter-spacing:1px;">Add a Study Resource</h3>
-      <p style="margin:0 0 20px;color:rgba(255,255,255,0.6);font-size:0.9rem;line-height:1.7;">
-        Open <strong style="color:#fff;">Claude Code</strong> and paste the info below. Claude will add it to the correct class page automatically.
+      <h3 style="margin:0 0 6px;color:#c8a028;font-size:1rem;text-transform:uppercase;letter-spacing:1px;">SLC Panel</h3>
+      <p style="margin:0 0 22px;color:rgba(255,255,255,0.55);font-size:0.88rem;line-height:1.6;">
+        Brothers add their own files and ratings &mdash; you don't have to do anything for that.
+        This is here for the times something needs removing.
       </p>
 
-      <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:18px 20px;font-family:monospace;font-size:0.85rem;color:rgba(255,255,255,0.75);line-height:2;">
-        <div style="color:#c8a028;margin-bottom:8px;font-size:0.75rem;letter-spacing:1px;">PASTE THIS FORMAT INTO CLAUDE CODE:</div>
-        Course: BIOL 1001<br/>
-        Professor: Dr. Smith<br/>
-        Resource Type: Study Guide / Lecture Notes / Practice Problems / Other<br/>
-        Link: https://drive.google.com/...<br/>
-        <span style="color:rgba(255,255,255,0.35);">(optional) Semester: Fall 2024</span>
+      <div style="display:grid;gap:14px;">
+        <div style="background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.08);border-radius:9px;padding:16px 18px;">
+          <div style="color:#c8a028;font-size:0.78rem;letter-spacing:1px;margin-bottom:7px;">TAKE DOWN A BAD UPLOAD</div>
+          <p style="margin:0 0 10px;color:rgba(255,255,255,0.7);font-size:0.86rem;line-height:1.6;">
+            Open the <strong>submissions</strong> table, find the row, check the box on the left, click Delete row.
+            It disappears from the site right away.
+          </p>
+          <a href="https://supabase.com/dashboard/project/wxkwbnqbqxightbaallr/editor" target="_blank" rel="noopener"
+             style="color:#c8a028;font-size:0.86rem;">Open Supabase Table Editor &rarr;</a>
+        </div>
+
+        <div style="background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.08);border-radius:9px;padding:16px 18px;">
+          <div style="color:#c8a028;font-size:0.78rem;letter-spacing:1px;margin-bottom:7px;">TAKE DOWN A BAD RATING</div>
+          <p style="margin:0 0 10px;color:rgba(255,255,255,0.7);font-size:0.86rem;line-height:1.6;">
+            Same place, but the <strong>ratings</strong> table. There is no delete button on the site on purpose &mdash;
+            the database key is visible in the page source, so one would let anyone wipe every rating.
+          </p>
+          <a href="https://supabase.com/dashboard/project/wxkwbnqbqxightbaallr/editor" target="_blank" rel="noopener"
+             style="color:#c8a028;font-size:0.86rem;">Open Supabase Table Editor &rarr;</a>
+        </div>
+
+        <div style="background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.08);border-radius:9px;padding:16px 18px;">
+          <div style="color:#c8a028;font-size:0.78rem;letter-spacing:1px;margin-bottom:7px;">ONCE A YEAR &mdash; CHANGE THE PASSWORD</div>
+          <p style="margin:0;color:rgba(255,255,255,0.7);font-size:0.86rem;line-height:1.6;">
+            In the website folder open <code style="color:#fff;">gate.js</code>, change the line
+            <code style="color:#fff;">var PW='...'</code>, save and push. That is the only place it lives, and changing it
+            signs out everyone still logged in &mdash; including brothers who graduated.
+          </p>
+        </div>
+
+        <div style="background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.08);border-radius:9px;padding:16px 18px;">
+          <div style="color:#c8a028;font-size:0.78rem;letter-spacing:1px;margin-bottom:7px;">IF RATINGS OR UPLOADS STOP WORKING</div>
+          <p style="margin:0;color:rgba(255,255,255,0.7);font-size:0.86rem;line-height:1.6;">
+            Supabase pauses free projects that sit unused. Just opening the dashboard wakes it back up.
+            The class pages and every study file keep working regardless &mdash; those don't depend on it.
+          </p>
+        </div>
+
+        <div style="background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.08);border-radius:9px;padding:16px 18px;">
+          <div style="color:#c8a028;font-size:0.78rem;letter-spacing:1px;margin-bottom:7px;">THE BACKUP</div>
+          <p style="margin:0;color:rgba(255,255,255,0.7);font-size:0.86rem;line-height:1.6;">
+            Most study files are hosted on another chapter's site, which we don't control. A full copy lives in
+            <code style="color:#fff;">sigep-testbank-files</code> on Diego's Mac. Get it onto your own machine when
+            you take over &mdash; if that laptop dies, the copy dies with it.
+          </p>
+        </div>
       </div>
-
-      <p style="margin:16px 0 0;color:rgba(255,255,255,0.35);font-size:0.8rem;">
-        Make sure the link is set to "Anyone with the link can view" before submitting.
-      </p>
     </div>
 
   </main>

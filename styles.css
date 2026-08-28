@@ -39,7 +39,10 @@ header {
   text-align: center;
   position: sticky;
   top: 0;
-  z-index: 100;
+  /* Must outrank .nav-search (250). The header is a stacking context, so the
+     dropdowns' own z-index only competes inside it — if the header sits below
+     the search bar, the search bar paints straight through the open menu. */
+  z-index: 400;
   box-shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
 
@@ -601,20 +604,7 @@ footer .social-links a:hover {
 
 .nav-row-arrow { margin-left: auto; opacity: 0.5; font-size: 0.95rem; }
 
-.nav-row-count {
-  margin-left: auto;
-  background: rgba(255,184,28,0.18);
-  color: var(--gold);
-  border-radius: 20px;
-  padding: 1px 9px;
-  font-size: 0.72rem;
-  font-weight: 600;
-}
 
-.nav-row:hover .nav-row-count {
-  background: rgba(46,24,80,0.25);
-  color: var(--purple-dark);
-}
 
 /* ============================================================
    SEARCH
@@ -834,14 +824,7 @@ footer .social-links a:hover {
   transform: translateY(-1px);
 }
 
-.dir-count {
-  background: rgba(0,0,0,0.25);
-  border-radius: 20px;
-  padding: 1px 8px;
-  font-size: 0.72rem;
-}
 
-.dir-course:hover .dir-count { background: rgba(46,24,80,0.2); }
 
 /* ============================================================
    RESOURCE VIEW (resource.html)
@@ -961,10 +944,6 @@ footer .social-links a:hover {
 }
 
 /* the count badge sits on a dark card head, so it needs its own colour */
-.rv-card-head .rv-chip-count {
-  background: rgba(255,184,28,0.18);
-  color: var(--gold);
-}
 
 .rv-card .rv-files { padding: 14px 20px 0; }
 .rv-card .rv-chips { padding: 14px 20px 0; }
@@ -989,14 +968,7 @@ footer .social-links a:hover {
 
 .rv-chip:hover { background: var(--gold); color: var(--purple-dark); }
 
-.rv-chip-count {
-  background: rgba(0,0,0,0.25);
-  border-radius: 20px;
-  padding: 1px 8px;
-  font-size: 0.72rem;
-}
 
-.rv-chip:hover .rv-chip-count { background: rgba(46,24,80,0.2); }
 
 @media (max-width: 620px) {
   .rv-title { font-size: 1.6rem; }
@@ -1039,12 +1011,6 @@ footer .social-links a:hover {
   text-align: left;
 }
 
-.hero-stats {
-  margin: 16px 0 0;
-  color: rgba(255,255,255,0.5);
-  font-size: 0.84rem;
-  letter-spacing: 0.4px;
-}
 
 /* on the home page the cards are the secondary, browse-y path */
 .hero .hero-cards { margin-top: 34px; }
@@ -1052,7 +1018,6 @@ footer .social-links a:hover {
 @media (max-width: 620px) {
   .hero { padding: 34px 20px; }
   .nav-search-hero input { padding: 16px 22px; font-size: 1rem; }
-  .hero-stats { font-size: 0.78rem; }
 }
 
 /* ============================================================

@@ -49,7 +49,6 @@
         c.profs.forEach(function (p) {
           var prow = el('div', 'nav-row');
           prow.appendChild(el('span', 'nav-row-label', p.name));
-          prow.appendChild(el('span', 'nav-row-count', p.count));
           prow.setAttribute('data-jump', 'resource.html?p=' + encodeURIComponent(p.id));
           psub.appendChild(prow);
         });
@@ -175,7 +174,7 @@
         idx.push({ t: c.name, s: d.code + ' — ' + d.name,
                    u: 'resource.html?c=' + encodeURIComponent(c.id), k: 'course' });
         c.profs.forEach(function (p) {
-          idx.push({ t: p.name, s: c.name + ' · ' + p.count + ' file' + (p.count === 1 ? '' : 's'),
+          idx.push({ t: p.name, s: c.name,
                      u: 'resource.html?p=' + encodeURIComponent(p.id), k: 'prof' });
         });
       });

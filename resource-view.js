@@ -76,8 +76,7 @@
       { label: r.p }
     ]));
     root.appendChild(el('h1', 'rv-title', r.p));
-    root.appendChild(el('p', 'rv-sub', r.c + ' · ' + r.dn + ' · ' +
-      r.l.length + ' file' + (r.l.length === 1 ? '' : 's')));
+    root.appendChild(el('p', 'rv-sub', r.c + ' · ' + r.dn));
     root.appendChild(fileList(r.l));
 
     // other professors teaching the same course
@@ -89,7 +88,6 @@
         var a = el('a', 'rv-chip');
         a.href = 'resource.html?p=' + encodeURIComponent(k);
         a.appendChild(el('span', null, R[k].p));
-        a.appendChild(el('span', 'rv-chip-count', R[k].l.length));
         row.appendChild(a);
       });
       root.appendChild(row);
@@ -116,7 +114,6 @@
       var head = el('a', 'rv-card-head');
       head.href = 'resource.html?p=' + encodeURIComponent(k);
       head.appendChild(el('span', 'rv-card-name', R[k].p));
-      head.appendChild(el('span', 'rv-chip-count', R[k].l.length));
       card.appendChild(head);
       card.appendChild(fileList(R[k].l));
       root.appendChild(card);
@@ -147,7 +144,6 @@
         var a = el('a', 'rv-chip');
         a.href = 'resource.html?p=' + encodeURIComponent(p.id);
         a.appendChild(el('span', null, p.name));
-        a.appendChild(el('span', 'rv-chip-count', p.count));
         row.appendChild(a);
       });
       card.appendChild(row);
