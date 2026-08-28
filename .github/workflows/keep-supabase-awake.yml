@@ -1,0 +1,49 @@
+# Supabase pauses free projects after about a week with no traffic. When that
+# happens the Brother Ratings page stops working until someone opens the
+# Supabase dashboard to wake it up.
+#
+# This runs a tiny read against the database every 3 days so the project never
+# goes idle long enough to be paused.
+name: Keep Supabase awake
+
+on:
+  schedule:
+    - cron: '0 14 */3 * *'   # every 3 days, 14:00 UTC (~9am Baton Rouge)
+  workflow_dispatch:          # lets you run it by hand from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read connection details from supabase-config.js
+        id: cfg
+        run: |
+          # Single source of truth — pointing the site at a new Supabase
+          # project automatically updates this workflow too.
+          URL=$(grep -o "SUPABASE_URL *= *'[^']*'" supabase-config.js | cut -d"'" -f2)
+          KEY=$(grep -o "SUPABASE_KEY *= *'[^']*'" supabase-config.js | cut -d"'" -f2)
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then
+            echo "Could not parse supabase-config.js" >&2
+            exit 1
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "::add-mask::$KEY"
+          echo "key=$KEY" >> "$GITHUB_OUTPUT"
+
+      - name: Ping the ratings table
+        run: |
+          CODE=$(curl -sS -o /tmp/body -w '%{http_code}' --max-time 30 \
+            -H "apikey: ${{ steps.cfg.outputs.key }}" \
+            -H "Authorization: Bearer ${{ steps.cfg.outputs.key }}" \
+            "${{ steps.cfg.outputs.url }}/rest/v1/ratings?select=id&limit=1")
+
+          echo "HTTP $CODE"
+          head -c 300 /tmp/body; echo
+
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Supabase did not return 200. The project may be paused or deleted — check the dashboard."
+            exit 1
+          fi
+          echo "Supabase is awake."
