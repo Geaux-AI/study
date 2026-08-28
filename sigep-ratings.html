@@ -122,20 +122,23 @@
 
   </main>
 
+  <script src="supabase-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
-  var _supabase = supabase.createClient(
-    'https://wxkwbnqbqxightbaallr.supabase.co',
-    'sb_publishable_zQ_JwkpIaXip6pqhmerOPw_gpm_3Izc'
-  );
+  var _supabase = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
 
   var allRatings = [];
 
   async function deleteRating(id) {
     if (!confirm('Delete this rating?')) return;
-    var { error } = await _supabase.from('ratings').delete().eq('id', id);
-    if (error) { alert('Delete failed: ' + error.message); }
-    else { loadRatings(); }
+    try {
+      var { error } = await _supabase.from('ratings').delete().eq('id', id);
+      if (error) { alert('Delete failed: ' + error.message); return; }
+      loadRatings();
+    } catch (e) {
+      alert('Delete failed — the ratings database is unreachable.');
+      console.error(e);
+    }
   }
 
   function starsHTML(n) {
@@ -145,16 +148,19 @@
     return s;
   }
 
+  // Everything here came from a form, so every field gets escaped — otherwise
+  // a rating containing HTML runs as markup for every brother who loads the page.
   function renderCard(r) {
-    return '<div class="sr-card" data-name="' + r.professor.toLowerCase() + '" data-course="' + (r.course||'').toLowerCase() + '">' +
+    var prof = esc(r.professor), course = esc(r.course || ''), id = esc(r.id);
+    return '<div class="sr-card" data-name="' + prof.toLowerCase() + '" data-course="' + course.toLowerCase() + '">' +
       '<div class="sr-card-header">' +
-        '<div class="sr-prof-name">' + r.professor + '</div>' +
-        (r.course ? '<span class="sr-course-badge">' + r.course + '</span>' : '') +
+        '<div class="sr-prof-name">' + prof + '</div>' +
+        (r.course ? '<span class="sr-course-badge">' + course + '</span>' : '') +
       '</div>' +
       '<div class="sr-stars">' + starsHTML(r.rating) + '</div>' +
       (r.recommend ? '<div class="sr-rec-badge">✓ Recommended by Brothers</div>' : '') +
-      (r.notes ? '<div class="sr-notes">' + r.notes.replace(/</g,'&lt;') + '</div>' : '') +
-      '<button class="sr-delete-btn" onclick="deleteRating(\'' + r.id + '\')">✕ Delete Rating</button>' +
+      (r.notes ? '<div class="sr-notes">' + esc(r.notes) + '</div>' : '') +
+      '<button class="sr-delete-btn" onclick="deleteRating(\'' + id + '\')">✕ Delete Rating</button>' +
     '</div>';
   }
 
@@ -162,17 +168,31 @@
     document.getElementById('sr-count').textContent = n + ' rating' + (n !== 1 ? 's' : '');
   }
 
+  function backendDown(grid, detail) {
+    grid.innerHTML = '<div class="sr-empty">Brother ratings are temporarily unavailable.' +
+      '<br><span style="opacity:0.6;font-size:0.85em;">Everything else on the site still works. ' +
+      'Tell the SLC the ratings database is down.</span></div>';
+    var c = document.getElementById('sr-count');
+    if (c) c.textContent = 'unavailable';          // otherwise it sits on "Loading..."
+    console.error('ratings backend unreachable:', detail);
+  }
+
   async function loadRatings() {
     var grid = document.getElementById('sr-grid');
     grid.innerHTML = '<div style="color:rgba(255,255,255,0.3);padding:40px 0;text-align:center;">Loading...</div>';
 
-    var { data, error } = await _supabase
-      .from('ratings')
-      .select('*');
+    // A network-level failure makes supabase-js throw rather than return an
+    // error, so without this the page sits on "Loading..." forever.
+    var data, error;
+    try {
+      var res = await _supabase.from('ratings').select('*').order('created_at', { ascending: false });
+      data = res.data; error = res.error;
+    } catch (e) {
+      return backendDown(grid, e);
+    }
 
     if (error || !data) {
-      grid.innerHTML = '<div class="sr-empty">Error: ' + (error ? error.message : 'no data') + '</div>';
-      return;
+      return backendDown(grid, error || 'no data');
     }
 
     allRatings = data;

@@ -122,12 +122,10 @@
 
   </main>
 
+  <script src="supabase-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
-  var _supabase = supabase.createClient(
-    'https://wxkwbnqbqxightbaallr.supabase.co',
-    'sb_publishable_zQ_JwkpIaXip6pqhmerOPw_gpm_3Izc'
-  );
+  var _supabase = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
 
   // ── Change this to whatever admin password you want ──
   var ADMIN_PW = 'SigEpAdmin1901';
@@ -177,13 +175,22 @@
     var notes       = document.getElementById('r-notes').value.trim();
     var recommended = document.getElementById('r-recommended').checked;
 
-    var { error } = await _supabase.from('ratings').insert([{
-      professor, course, rating, notes, recommend: recommended
-    }]);
+    // supabase-js throws (rather than returning an error) when the backend is
+    // unreachable, so this needs a try/catch or the button stays stuck.
+    var error = null;
+    try {
+      var res = await _supabase.from('ratings').insert([{
+        professor, course, rating, notes, recommend: recommended
+      }]);
+      error = res.error;
+    } catch (e) {
+      error = { message: 'The ratings database is unreachable. Tell the SLC — nothing was saved.' };
+      console.error(e);
+    }
 
     if (error) {
       var errEl = document.getElementById('rating-error');
-      errEl.textContent = 'Error: ' + (error.message || JSON.stringify(error));
+      errEl.textContent = error.message || JSON.stringify(error);
       errEl.style.display = 'block';
       console.error(error);
     } else {
