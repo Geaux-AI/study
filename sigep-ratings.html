@@ -82,8 +82,6 @@
     }
     #sr-search::placeholder { color: rgba(255,255,255,0.35); }
     .sr-count { color: rgba(255,255,255,0.4); font-size: 0.82rem; margin-top: 8px; }
-    .sr-delete-btn { display:block; margin-top:10px; width:100%; padding:6px; border-radius:6px; border:1px solid rgba(231,76,60,0.4); background:rgba(231,76,60,0.08); color:#e74c3c; font-size:0.78rem; cursor:pointer; transition:background 0.15s; }
-    .sr-delete-btn:hover { background:rgba(231,76,60,0.2); }
   </style>
 </head>
 <body>
@@ -129,17 +127,9 @@
 
   var allRatings = [];
 
-  async function deleteRating(id) {
-    if (!confirm('Delete this rating?')) return;
-    try {
-      var { error } = await _supabase.from('ratings').delete().eq('id', id);
-      if (error) { alert('Delete failed: ' + error.message); return; }
-      loadRatings();
-    } catch (e) {
-      alert('Delete failed — the ratings database is unreachable.');
-      console.error(e);
-    }
-  }
+  // Deleting from the page was removed on purpose. The API key is public, so a
+  // delete policy would let any visitor wipe every rating. Remove bad ratings
+  // in the Supabase dashboard: Table Editor -> ratings -> delete the row.
 
   function starsHTML(n) {
     var s = '';
@@ -160,7 +150,6 @@
       '<div class="sr-stars">' + starsHTML(r.rating) + '</div>' +
       (r.recommend ? '<div class="sr-rec-badge">✓ Recommended by Brothers</div>' : '') +
       (r.notes ? '<div class="sr-notes">' + esc(r.notes) + '</div>' : '') +
-      '<button class="sr-delete-btn" onclick="deleteRating(\'' + id + '\')">✕ Delete Rating</button>' +
     '</div>';
   }
 
