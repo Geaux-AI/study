@@ -185,7 +185,9 @@
     // error, so without this the page sits on "Loading..." forever.
     var data, error;
     try {
-      var res = await _supabase.from('ratings').select('*').order('created_at', { ascending: false });
+      // id is auto-incrementing, so descending id is newest-first without
+      // depending on a timestamp column the table may not have.
+      var res = await _supabase.from('ratings').select('*').order('id', { ascending: false });
       data = res.data; error = res.error;
     } catch (e) {
       return backendDown(grid, e);

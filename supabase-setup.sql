@@ -4,19 +4,18 @@
 --  Dashboard -> SQL Editor -> New query -> paste -> Run
 -- ============================================================
 
+-- NOTE: this matches the table already running in production — an integer
+-- id, and no timestamp column. The site sorts by id descending to get
+-- newest-first, so do not change id to a uuid without also changing
+-- sigep-ratings.html.
 create table if not exists public.ratings (
-  id         uuid primary key default gen_random_uuid(),
-  professor  text        not null,
+  id         bigint generated always as identity primary key,
+  professor  text     not null,
   course     text,
-  rating     smallint    not null check (rating between 1 and 5),
+  rating     smallint not null check (rating between 1 and 5),
   notes      text,
-  recommend  boolean     not null default false,
-  created_at timestamptz not null default now()
+  recommend  boolean  not null default false
 );
-
--- Newest first is how the site lists them.
-create index if not exists ratings_created_at_idx
-  on public.ratings (created_at desc);
 
 -- Row Level Security. The site ships its API key in the page source (it is a
 -- public/anon key, which is how Supabase is designed), so these policies are
