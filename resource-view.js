@@ -3,6 +3,8 @@
                resource.html?c=ANTH-1001
                resource.html?d=ANTH&s=ag                                    */
 (function () {
+  window.whenSubmissionsReady(function () {
+
   var R = window.RESOURCES, NAV = window.NAV_DATA, root = document.getElementById('rv-root');
   if (!R || !root) return;
 
@@ -155,4 +157,6 @@
   }
 
   notFound('no selection');
+
+  });
 })();

@@ -35,6 +35,60 @@
     <p class="page-subtitle">Submit a professor rating or a study resource for the chapter</p>
 
     <!-- ΣΦΕ BROTHER RATING FORM -->
+    <div id="upload-resource" style="background:linear-gradient(135deg,rgba(200,160,40,0.08),rgba(75,38,131,0.12));border:1px solid rgba(200,160,40,0.3);border-radius:12px;padding:28px 32px;margin-bottom:36px;">
+      <h2 style="margin:0 0 6px;color:#c8a028;font-size:1.2rem;letter-spacing:0.5px;">Add a Study Resource</h2>
+      <p style="margin:0 0 22px;color:rgba(255,255,255,0.55);font-size:0.9rem;">
+        Upload a study guide, notes, old exam, or practice problems. It goes live on the class page immediately &mdash; no waiting on anyone.
+      </p>
+
+      <form onsubmit="return handleUpload(event)">
+        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+          <div class="form-group" style="flex:1;min-width:200px;">
+            <label for="u-course">Course</label>
+            <input type="text" id="u-course" placeholder="e.g. BIOL 1201" list="course-options" autocomplete="off" required />
+          </div>
+          <div class="form-group" style="flex:1;min-width:200px;">
+            <label for="u-professor">Professor</label>
+            <input type="text" id="u-professor" placeholder="e.g. Crousillac" list="professor-options" autocomplete="off" required />
+          </div>
+        </div>
+        <datalist id="professor-options"></datalist>
+
+        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+          <div class="form-group" style="flex:1;min-width:200px;">
+            <label for="u-title">What is it?</label>
+            <input type="text" id="u-title" placeholder="e.g. Exam 2 Study Guide" required />
+          </div>
+          <div class="form-group" style="flex:1;min-width:200px;">
+            <label for="u-kind">Type</label>
+            <select id="u-kind">
+              <option>Study Guide</option>
+              <option>Lecture Notes</option>
+              <option>Practice Problems</option>
+              <option>Old Exam</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="u-file">File <span style="opacity:0.5;font-weight:400;">(PDF, Word, PowerPoint, Excel, or image &mdash; 25 MB max)</span></label>
+          <input type="file" id="u-file" required
+                 accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg" />
+        </div>
+
+        <div class="form-group">
+          <label for="u-by">Your name <span style="opacity:0.5;font-weight:400;">(optional)</span></label>
+          <input type="text" id="u-by" placeholder="so brothers know who to thank" />
+        </div>
+
+        <button type="submit" class="btn btn-gold" id="u-submit-btn">Upload Resource</button>
+        <div id="u-progress" style="display:none;margin-top:12px;color:rgba(255,255,255,0.6);font-size:0.88rem;"></div>
+        <div id="u-success" style="display:none;margin-top:12px;color:#27ae60;font-size:0.88rem;"></div>
+        <div id="u-error" style="display:none;margin-top:12px;color:#e74c3c;font-size:0.88rem;"></div>
+      </form>
+    </div>
+
     <div id="sigep-rating" style="background:linear-gradient(135deg,rgba(200,160,40,0.08),rgba(75,38,131,0.12));border:1px solid rgba(200,160,40,0.3);border-radius:12px;padding:28px 32px;margin-bottom:36px;">
       <h2 style="margin:0 0 6px;color:#c8a028;font-size:1.2rem;letter-spacing:0.5px;">ΣΦΕ Brother Rating</h2>
       <p style="margin:0 0 20px;color:rgba(255,255,255,0.55);font-size:0.88rem;">Your honest take on a professor — tips, warnings, and whether brothers should take them.</p>
@@ -125,6 +179,7 @@
 
   <script src="nav-data.js"></script>
   <script src="supabase-config.js"></script>
+  <script src="submissions.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
   var _supabase = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
@@ -180,6 +235,106 @@
     document.getElementById('course-options').innerHTML =
       out.map(function (n) { return '<option value="' + esc(n) + '">'; }).join('');
   })();
+
+  // ---------- professor suggestions, from the site's own data ----------
+  (function () {
+    if (!window.NAV_DATA) return;
+    var seen = {}, out = [];
+    Object.keys(NAV_DATA).forEach(function (k) {
+      NAV_DATA[k].depts.forEach(function (d) {
+        d.courses.forEach(function (c) {
+          c.profs.forEach(function (p) {
+            if (!seen[p.name]) { seen[p.name] = 1; out.push(p.name); }
+          });
+        });
+      });
+    });
+    out.sort();
+    document.getElementById('professor-options').innerHTML =
+      out.map(function (n) { return '<option value="' + esc(n) + '">'; }).join('');
+  })();
+
+  // ---------- uploading a study resource ----------
+  var MAX_BYTES = 25 * 1024 * 1024;
+
+  // Storage keys must be plain ASCII, and two brothers uploading
+  // "exam 1.pdf" must not overwrite each other.
+  function safeName(name) {
+    var dot = name.lastIndexOf('.');
+    var base = (dot > 0 ? name.slice(0, dot) : name).replace(/[^A-Za-z0-9]+/g, '-')
+                 .replace(/^-+|-+$/g, '').slice(0, 60).toLowerCase() || 'file';
+    var ext = (dot > 0 ? name.slice(dot + 1) : '').replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+    var stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    return base + '-' + stamp + (ext ? '.' + ext : '');
+  }
+
+  function uploadMsg(id, text) {
+    ['u-progress', 'u-success', 'u-error'].forEach(function (x) {
+      document.getElementById(x).style.display = 'none';
+    });
+    if (!id) return;
+    var el = document.getElementById(id);
+    el.textContent = text;
+    el.style.display = 'block';
+  }
+
+  async function handleUpload(e) {
+    e.preventDefault();
+    var btn = document.getElementById('u-submit-btn');
+    var fileEl = document.getElementById('u-file');
+    var file = fileEl.files[0];
+
+    var course    = document.getElementById('u-course').value.trim();
+    var professor = document.getElementById('u-professor').value.trim();
+    var title     = document.getElementById('u-title').value.trim();
+    var kind      = document.getElementById('u-kind').value;
+    var by        = document.getElementById('u-by').value.trim();
+
+    if (!file) { uploadMsg('u-error', 'Pick a file first.'); return false; }
+    if (file.size > MAX_BYTES) {
+      uploadMsg('u-error', 'That file is ' + (file.size / 1048576).toFixed(1) +
+                ' MB. The limit is 25 MB.');
+      return false;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Uploading...';
+    uploadMsg('u-progress', 'Uploading ' + file.name + '...');
+
+    // Group files by course so the bucket stays browsable in the dashboard.
+    var folder = (course.toUpperCase().replace(/[^A-Z0-9]+/g, '-') || 'MISC');
+    var path = folder + '/' + safeName(file.name);
+
+    try {
+      var up = await _supabase.storage.from('study-files')
+        .upload(path, file, { cacheControl: '3600', upsert: false });
+      if (up.error) throw up.error;
+
+      var ins = await _supabase.from('submissions').insert([{
+        course: course, professor: professor, title: title,
+        kind: kind, path: path, submitted_by: by || null
+      }]);
+      if (ins.error) {
+        // Don't leave an orphaned file behind if the row fails.
+        try { await _supabase.storage.from('study-files').remove([path]); } catch (_) {}
+        throw ins.error;
+      }
+
+      e.target.reset();
+      uploadMsg('u-success', '✓ Uploaded. It is live on the ' + course + ' page now.');
+    } catch (err) {
+      var m = (err && err.message) ? err.message : String(err);
+      if (/Failed to fetch|NetworkError/i.test(m)) {
+        m = 'Could not reach the server. Nothing was uploaded — try again.';
+      }
+      uploadMsg('u-error', m);
+      console.error(err);
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Upload Resource';
+    return false;
+  }
 
   async function handleRatingSubmit(e) {
     e.preventDefault();

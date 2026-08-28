@@ -1,6 +1,8 @@
 /* Cascading class navigation + global search.
    Reads window.NAV_DATA (nav-data.js). Rebuilds the <nav> bar on every page. */
 (function () {
+  window.whenSubmissionsReady(function () {
+
   var DATA = window.NAV_DATA;
   if (!DATA) return;
 
@@ -232,5 +234,7 @@
       var first = results.querySelector('.nav-search-hit');
       if (first) location.href = first.getAttribute('href');
     }
+  });
+
   });
 })();
