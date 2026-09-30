@@ -73,8 +73,11 @@
 
         <div class="form-group">
           <label for="u-file">File <span style="opacity:0.5;font-weight:400;">(PDF, Word, PowerPoint, Excel, or image &mdash; 25 MB max)</span></label>
-          <input type="file" id="u-file" required
-                 accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg" />
+          <input type="file" id="u-file" required multiple
+                 accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.png,.jpg,.jpeg,.heic" />
+          <div style="margin-top:6px;color:rgba(255,255,255,0.45);font-size:0.8rem;">
+            Have screenshots or photos of a test? Select all of them at once &mdash; they're combined into one PDF, in filename order.
+          </div>
         </div>
 
         <div class="form-group">
@@ -303,6 +306,64 @@
     return base + '-' + stamp + (ext ? '.' + ext : '');
   }
 
+  function isImage(f) {
+    return /^image\//.test(f.type) || /\.(png|jpe?g|heic)$/i.test(f.name);
+  }
+
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = src; s.onload = resolve;
+      s.onerror = function () { reject(new Error('Could not load the PDF maker. Check your connection and try again.')); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function decodeImage(f) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(f);
+      var img = new Image();
+      img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        reject(new Error('Could not read ' + f.name + '. If it is a HEIC photo, try Safari or convert it to JPG first.'));
+      };
+      img.src = url;
+    });
+  }
+
+  // Several screenshots of one test -> one PDF, one page per picture.
+  // Screenshot and camera filenames are timestamps/counters, so sorting by
+  // name puts the pages in the order they were taken.
+  async function imagesToPdf(files, title) {
+    if (!window.jspdf) {
+      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    }
+    files = files.slice().sort(function (a, b) {
+      return a.name.localeCompare(b.name, undefined, { numeric: true });
+    });
+
+    var pdf = null;
+    var MAX_W = 1600;  // plenty for reading; keeps a 20-page test well under 25 MB
+    for (var i = 0; i < files.length; i++) {
+      uploadMsg('u-progress', 'Building PDF — page ' + (i + 1) + ' of ' + files.length + '...');
+      var img = await decodeImage(files[i]);
+      var scale = Math.min(1, MAX_W / img.naturalWidth);
+      var w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);  // transparent PNGs would go black
+      ctx.drawImage(img, 0, 0, w, h);
+      var data = c.toDataURL('image/jpeg', 0.85);
+      var orient = w > h ? 'l' : 'p';
+      if (!pdf) pdf = new window.jspdf.jsPDF({ orientation: orient, unit: 'px', format: [w, h], hotfixes: ['px_scaling'] });
+      else pdf.addPage([w, h], orient);
+      pdf.addImage(data, 'JPEG', 0, 0, w, h);
+    }
+    return new File([pdf.output('blob')], (title || 'scanned-test') + '.pdf', { type: 'application/pdf' });
+  }
+
   function uploadMsg(id, text) {
     ['u-progress', 'u-success', 'u-error'].forEach(function (x) {
       document.getElementById(x).style.display = 'none';
@@ -317,7 +378,8 @@
     e.preventDefault();
     var btn = document.getElementById('u-submit-btn');
     var fileEl = document.getElementById('u-file');
-    var file = fileEl.files[0];
+    var files = Array.prototype.slice.call(fileEl.files);
+    var file = files[0];
 
     var course    = document.getElementById('u-course').value.trim();
     var professor = document.getElementById('u-professor').value.trim();
@@ -326,6 +388,25 @@
     var by        = document.getElementById('u-by').value.trim();
 
     if (!file) { uploadMsg('u-error', 'Pick a file first.'); return false; }
+
+    if (files.length > 1) {
+      if (!files.every(isImage)) {
+        uploadMsg('u-error', 'You can only pick several files at once if they are all pictures. ' +
+                  'For anything else, upload one file at a time.');
+        return false;
+      }
+      btn.disabled = true;
+      try {
+        file = await imagesToPdf(files, title);
+      } catch (err) {
+        uploadMsg('u-error', err.message || String(err));
+        console.error(err);
+        btn.disabled = false;
+        return false;
+      }
+      btn.disabled = false;
+    }
+
     if (file.size > MAX_BYTES) {
       uploadMsg('u-error', 'That file is ' + (file.size / 1048576).toFixed(1) +
                 ' MB. The limit is 25 MB.');
