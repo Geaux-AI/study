@@ -80,9 +80,27 @@
           </div>
         </div>
 
+        <!-- Shown once pictures are picked: drag boxes to black out names before upload. -->
+        <div id="u-redact" style="display:none;margin:4px 0 20px;">
+          <div style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.35);border-radius:8px;padding:12px 14px;margin-bottom:14px;color:rgba(255,255,255,0.8);font-size:0.86rem;line-height:1.5;">
+            <strong style="color:#fff;">Cover up names first.</strong>
+            Drag a box over the student's name, ID number, and anything else that could show whose test this was.
+            The black boxes are burned into the picture &mdash; nobody can remove them later.
+          </div>
+          <div id="u-pages"></div>
+        </div>
+
         <div class="form-group">
           <label for="u-by">Your name <span style="opacity:0.5;font-weight:400;">(optional)</span></label>
           <input type="text" id="u-by" placeholder="optional" />
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex;gap:10px;align-items:flex-start;font-weight:400;cursor:pointer;line-height:1.45;">
+            <input type="checkbox" id="u-anon" required style="width:16px;height:16px;margin-top:2px;flex-shrink:0;accent-color:#c8a028;" />
+            <span>I removed the student's name, ID number, and anything else that identifies who took this.
+              <span id="u-anon-doc" style="display:none;opacity:0.6;">(For a PDF or Word file, do this before uploading &mdash; it can't be edited here.)</span></span>
+          </label>
         </div>
 
         <button type="submit" class="btn btn-gold" id="u-submit-btn">Upload Resource</button>
@@ -332,22 +350,106 @@
     });
   }
 
-  // Several screenshots of one test -> one PDF, one page per picture.
+  // ---------- covering names on pictures ----------
+  // Picked pictures become "pages": the decoded image plus the black boxes the
+  // uploader drew, stored as 0-1 fractions so they apply at any resolution.
   // Screenshot and camera filenames are timestamps/counters, so sorting by
   // name puts the pages in the order they were taken.
-  async function imagesToPdf(files, title) {
+  var pages = [];
+
+  function drawPage(p, cur) {
+    var c = p.canvas, ctx = c.getContext('2d');
+    ctx.drawImage(p.img, 0, 0, c.width, c.height);
+    ctx.fillStyle = '#000';
+    p.boxes.concat(cur ? [cur] : []).forEach(function (b) {
+      ctx.fillRect(b.x * c.width, b.y * c.height, b.w * c.width, b.h * c.height);
+    });
+  }
+
+  function renderPages() {
+    var holder = document.getElementById('u-pages');
+    holder.innerHTML = '';
+    pages.forEach(function (p, i) {
+      var card = document.createElement('div');
+      card.style.cssText = 'margin-bottom:16px;';
+      card.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:0.82rem;color:rgba(255,255,255,0.6);">' +
+          '<span>Page ' + (i + 1) + ' of ' + pages.length + ' &middot; ' + esc(p.name) + '</span>' +
+          '<button type="button" style="background:rgba(255,255,255,0.08);border:none;color:rgba(255,255,255,0.8);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.8rem;">Undo box</button>' +
+        '</div>';
+      var c = document.createElement('canvas');
+      var s = Math.min(1, 1000 / p.img.naturalWidth);  // preview resolution only
+      c.width = Math.round(p.img.naturalWidth * s);
+      c.height = Math.round(p.img.naturalHeight * s);
+      c.style.cssText = 'display:block;max-width:100%;max-height:75vh;border-radius:6px;cursor:crosshair;touch-action:none;background:#fff;';
+      card.appendChild(c);
+      holder.appendChild(card);
+      p.canvas = c;
+      drawPage(p);
+
+      card.querySelector('button').onclick = function () { p.boxes.pop(); drawPage(p); };
+
+      var start = null;
+      function pt(ev) {
+        var r = c.getBoundingClientRect();
+        return { x: Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)),
+                 y: Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height)) };
+      }
+      function box(a, b) {
+        return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(a.x - b.x), h: Math.abs(a.y - b.y) };
+      }
+      c.addEventListener('pointerdown', function (ev) { start = pt(ev); c.setPointerCapture(ev.pointerId); });
+      c.addEventListener('pointermove', function (ev) { if (start) drawPage(p, box(start, pt(ev))); });
+      c.addEventListener('pointerup', function (ev) {
+        if (!start) return;
+        var b = box(start, pt(ev)); start = null;
+        if (b.w > 0.01 && b.h > 0.005) p.boxes.push(b);  // ignore stray taps
+        drawPage(p);
+      });
+    });
+  }
+
+  async function onFilesPicked() {
+    var files = Array.prototype.slice.call(document.getElementById('u-file').files);
+    var allImages = files.length > 0 && files.every(isImage);
+    pages = [];
+    document.getElementById('u-redact').style.display = 'none';
+    document.getElementById('u-anon-doc').style.display = files.length && !allImages ? 'inline' : 'none';
+    uploadMsg(null);
+    if (!allImages) {
+      if (files.length > 1) {
+        uploadMsg('u-error', 'You can only pick several files at once if they are all pictures. ' +
+                  'For anything else, upload one file at a time.');
+      }
+      return;
+    }
+    files.sort(function (a, b) { return a.name.localeCompare(b.name, undefined, { numeric: true }); });
+    try {
+      for (var i = 0; i < files.length; i++) {
+        pages.push({ name: files[i].name, img: await decodeImage(files[i]), boxes: [] });
+      }
+    } catch (err) {
+      pages = [];
+      uploadMsg('u-error', err.message);
+      return;
+    }
+    renderPages();
+    document.getElementById('u-redact').style.display = 'block';
+  }
+  document.getElementById('u-file').addEventListener('change', onFilesPicked);
+
+  // Pages -> one PDF, one page per picture, with the black boxes painted into
+  // the pixels. Re-drawing through a canvas also drops photo metadata (GPS etc).
+  async function imagesToPdf(pages, title) {
     if (!window.jspdf) {
       await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
     }
-    files = files.slice().sort(function (a, b) {
-      return a.name.localeCompare(b.name, undefined, { numeric: true });
-    });
 
     var pdf = null;
     var MAX_W = 1600;  // plenty for reading; keeps a 20-page test well under 25 MB
-    for (var i = 0; i < files.length; i++) {
-      uploadMsg('u-progress', 'Building PDF — page ' + (i + 1) + ' of ' + files.length + '...');
-      var img = await decodeImage(files[i]);
+    for (var i = 0; i < pages.length; i++) {
+      uploadMsg('u-progress', 'Building PDF — page ' + (i + 1) + ' of ' + pages.length + '...');
+      var img = pages[i].img;
       var scale = Math.min(1, MAX_W / img.naturalWidth);
       var w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
       var c = document.createElement('canvas');
@@ -355,6 +457,12 @@
       var ctx = c.getContext('2d');
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);  // transparent PNGs would go black
       ctx.drawImage(img, 0, 0, w, h);
+      ctx.fillStyle = '#000';
+      pages[i].boxes.forEach(function (b) {
+        // Round outward so a box never leaves a sliver of the name showing.
+        var x0 = Math.floor(b.x * w), y0 = Math.floor(b.y * h);
+        ctx.fillRect(x0, y0, Math.ceil((b.x + b.w) * w) - x0, Math.ceil((b.y + b.h) * h) - y0);
+      });
       var data = c.toDataURL('image/jpeg', 0.85);
       var orient = w > h ? 'l' : 'p';
       if (!pdf) pdf = new window.jspdf.jsPDF({ orientation: orient, unit: 'px', format: [w, h], hotfixes: ['px_scaling'] });
@@ -389,15 +497,23 @@
 
     if (!file) { uploadMsg('u-error', 'Pick a file first.'); return false; }
 
-    if (files.length > 1) {
-      if (!files.every(isImage)) {
-        uploadMsg('u-error', 'You can only pick several files at once if they are all pictures. ' +
-                  'For anything else, upload one file at a time.');
+    if (files.length > 1 && !files.every(isImage)) {
+      uploadMsg('u-error', 'You can only pick several files at once if they are all pictures. ' +
+                'For anything else, upload one file at a time.');
+      return false;
+    }
+
+    // Pictures always go through the PDF step, even just one, so the name
+    // boxes are burned in and phone metadata is stripped.
+    if (pages.length) {
+      var covered = pages.some(function (p) { return p.boxes.length; });
+      if (!covered && !confirm("You haven't covered anything on these pictures. " +
+                               'Upload anyway? Only do this if no name or ID shows anywhere.')) {
         return false;
       }
       btn.disabled = true;
       try {
-        file = await imagesToPdf(files, title);
+        file = await imagesToPdf(pages, title);
       } catch (err) {
         uploadMsg('u-error', err.message || String(err));
         console.error(err);
@@ -437,6 +553,9 @@
       }
 
       e.target.reset();
+      pages = [];
+      document.getElementById('u-redact').style.display = 'none';
+      document.getElementById('u-anon-doc').style.display = 'none';
       uploadMsg('u-success', '✓ Uploaded. It is live on the ' + course + ' page now.');
     } catch (err) {
       var m = (err && err.message) ? err.message : String(err);
