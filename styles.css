@@ -421,6 +421,14 @@ main {
   box-shadow: 0 4px 15px rgba(255,184,28,0.4);
 }
 
+.btn:disabled,
+.btn:disabled:hover {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* ---- INFO BOXES ---- */
 .info-box {
   background: rgba(255,184,28,0.1);
