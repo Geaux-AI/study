@@ -80,12 +80,11 @@
           </div>
         </div>
 
-        <!-- Shown once pictures are picked: drag boxes to black out names before upload. -->
+        <!-- Shown once pictures are picked: optional boxes to black out names before upload. -->
         <div id="u-redact" style="display:none;margin:4px 0 20px;">
-          <div style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.35);border-radius:8px;padding:12px 14px;margin-bottom:14px;color:rgba(255,255,255,0.8);font-size:0.86rem;line-height:1.5;">
-            <strong style="color:#fff;">Cover up names first.</strong>
-            Drag a box over the student's name, ID number, and anything else that could show whose test this was.
-            The black boxes are burned into the picture &mdash; nobody can remove them later.
+          <div style="background:rgba(200,160,40,0.08);border:1px solid rgba(200,160,40,0.3);border-radius:8px;padding:12px 14px;margin-bottom:14px;color:rgba(255,255,255,0.8);font-size:0.86rem;line-height:1.5;">
+            If there's a name or student ID on any page, drag a box over it.
+            The black box is burned into the picture &mdash; nobody can remove it later.
           </div>
           <div id="u-pages"></div>
         </div>
@@ -98,8 +97,8 @@
         <div class="form-group">
           <label style="display:flex;gap:10px;align-items:flex-start;font-weight:400;cursor:pointer;line-height:1.45;">
             <input type="checkbox" id="u-anon" required style="width:16px;height:16px;margin-top:2px;flex-shrink:0;accent-color:#c8a028;" />
-            <span>I removed the student's name, ID number, and anything else that identifies who took this.
-              <span id="u-anon-doc" style="display:none;opacity:0.6;">(For a PDF or Word file, do this before uploading &mdash; it can't be edited here.)</span></span>
+            <span>No names or student IDs show (or I covered them).
+              <span id="u-anon-doc" style="display:none;opacity:0.6;">(For a PDF or Word file, remove them before uploading &mdash; it can't be edited here.)</span></span>
           </label>
         </div>
 
@@ -506,11 +505,6 @@
     // Pictures always go through the PDF step, even just one, so the name
     // boxes are burned in and phone metadata is stripped.
     if (pages.length) {
-      var covered = pages.some(function (p) { return p.boxes.length; });
-      if (!covered && !confirm("You haven't covered anything on these pictures. " +
-                               'Upload anyway? Only do this if no name or ID shows anywhere.')) {
-        return false;
-      }
       btn.disabled = true;
       try {
         file = await imagesToPdf(pages, title);
