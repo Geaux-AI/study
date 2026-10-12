@@ -226,6 +226,7 @@
 
   <script src="nav-data.js"></script>
   <script src="supabase-config.js"></script>
+  <script src="guardrails.js"></script>
   <script src="submissions.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script>
@@ -573,6 +574,19 @@
     var rating      = parseInt(document.getElementById('r-rating').value);
     var notes       = document.getElementById('r-notes').value.trim();
     var recommended = document.getElementById('r-recommended').checked;
+
+    var bad = screenFields({ professor: professor, course: course, notes: notes });
+    if (bad) {
+      sendAlert('blocked_rating',
+        'SigEp Ratings: blocked a rating (' + bad.category + ' in ' + bad.field + '). Nothing was saved. ' +
+        'Professor: ' + professor + (course ? ', ' + course : '') + '. Text: "' + notes.slice(0, 250) + '"');
+      var badEl = document.getElementById('rating-error');
+      badEl.textContent = bad.message;
+      badEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Submit Rating';
+      return false;
+    }
 
     // supabase-js throws (rather than returning an error) when the backend is
     // unreachable, so this needs a try/catch or the button stays stuck.

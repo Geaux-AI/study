@@ -10,6 +10,11 @@
 window.SUPABASE_URL = 'https://wxkwbnqbqxightbaallr.supabase.co';
 window.SUPABASE_KEY = 'sb_publishable_zQ_JwkpIaXip6pqhmerOPw_gpm_3Izc';
 
+/* Slack alerts (#claude-agents) go through this Cloudflare relay, which holds
+   the Slack webhook so it never appears in the site. Shared with the Prompt
+   Library. Blank it to turn alerts off. */
+window.ALERT_RELAY_URL = 'https://icy-smoke-ffde.diegoaxel2004.workers.dev';
+
 /* Escape text that came from a form before putting it in the page.
    Without this, anything a brother types is treated as HTML. */
 window.esc = function (s) {
